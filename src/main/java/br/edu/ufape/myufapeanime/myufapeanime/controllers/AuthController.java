@@ -76,7 +76,6 @@ public class AuthController {
             }
     )
     public ResponseEntity<Object> logout(HttpSession session) {
-        //checar se tá logado
         session.removeAttribute("user");
         session.invalidate();
 

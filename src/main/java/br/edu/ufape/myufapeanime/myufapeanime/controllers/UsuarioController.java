@@ -121,7 +121,8 @@ public class UsuarioController {
             tags = {"Usuários", "Animes"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Lista de animes retornada com sucesso"),
-                    @ApiResponse(responseCode = "404", description = "Usuário ou lista de animes não encontrada")
+                    @ApiResponse(responseCode = "404", description = "Usuário ou lista de animes não encontrada"),
+                    @ApiResponse(responseCode = "403", description = "Faça login para executar essa ação")
             })
     public ResponseEntity<List<AnimeDTO>> getAnimesAssistidosUsuario(HttpSession session) {
         try {
@@ -149,7 +150,8 @@ public class UsuarioController {
             tags = {"Usuários", "Animes"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Lista de animes retornada com sucesso"),
-                    @ApiResponse(responseCode = "404", description = "Usuário ou lista de animes não encontrada")
+                    @ApiResponse(responseCode = "404", description = "Usuário ou lista de animes não encontrada"),
+                    @ApiResponse(responseCode = "403", description = "Faça login para executar essa ação")
             })
     public ResponseEntity<List<AnimeDTO>> getAnimesCompletos(HttpSession session) {
         try {
@@ -174,7 +176,8 @@ public class UsuarioController {
             tags = {"Usuários", "Animes"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Lista de animes retornada com sucesso"),
-                    @ApiResponse(responseCode = "404", description = "Usuário ou lista de animes não encontrada")
+                    @ApiResponse(responseCode = "404", description = "Usuário ou lista de animes não encontrada"),
+                    @ApiResponse(responseCode = "403", description = "Faça login para executar essa ação")
             })
     public ResponseEntity<List<AnimeDTO>> getAnimesQueroAssistir(HttpSession session) {
         try {
@@ -208,7 +211,7 @@ public class UsuarioController {
             responses = {
                     @ApiResponse(responseCode = "200", description = "Anime adicionado com sucesso"),
                     @ApiResponse(responseCode = "404", description = "Usuário ou anime não encontrado"),
-                    @ApiResponse(responseCode = "403", description = "Acesso negado")
+                    @ApiResponse(responseCode = "403", description = "Faça login para executar essa ação")
             }
     )
     public ResponseEntity<Object> adicionarAnimeLista(@PathVariable Long animeId, @PathVariable TipoLista tipoLista, HttpSession session) {
@@ -234,9 +237,6 @@ public class UsuarioController {
             summary = "Atualizar usuário",
             description = "Atualiza as informações de um usuário existente com base no ID fornecido.",
             tags = {"Usuários"},
-            parameters = {
-                    @Parameter(name = "id", description = "ID do usuário a ser atualizado", required = true, example = "1")
-            },
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Objeto JSON contendo os novos dados do usuário",
                     required = true,
@@ -248,7 +248,8 @@ public class UsuarioController {
             responses = {
                     @ApiResponse(responseCode = "200", description = "Usuário atualizado com sucesso"),
                     @ApiResponse(responseCode = "404", description = "Usuário não encontrado"),
-                    @ApiResponse(responseCode = "409", description = "Conflito de dados, e-mail já cadastrado")
+                    @ApiResponse(responseCode = "409", description = "Conflito de dados, e-mail já cadastrado"),
+                    @ApiResponse(responseCode = "403", description = "Faça login para executar essa ação")
             }
     )
     public ResponseEntity<Object> updateUsuario(@RequestBody UsuarioComSenhaDTO usuarioComSenhaDTO, HttpSession session) {
@@ -281,13 +282,12 @@ public class UsuarioController {
             summary = "Deletar usuário",
             description = "Remove o usuário logado no sistema.",
             tags = {"Usuários"},
-            parameters = {
-                    @Parameter(name = "id", description = "ID do usuário a ser deletado", required = true, example = "1")
-            },
             responses = {
                     @ApiResponse(responseCode = "204", description = "Usuário deletado com sucesso"),
                     @ApiResponse(responseCode = "404", description = "Usuário não encontrado"),
-                    @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+                    @ApiResponse(responseCode = "500", description = "Erro interno do servidor"),
+                    @ApiResponse(responseCode = "403", description = "Faça login para executar essa ação")
+
             }
     )
     public ResponseEntity<Object> deleteUsuario(HttpSession session) {
