@@ -26,7 +26,6 @@ import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroUsuarioEx
 import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroUsuarioExceptions.UsuarioInexistenteException;
 import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroUsuarioExceptions.UsuarioSenhaInvalidaException;
 import br.edu.ufape.myufapeanime.myufapeanime.repositorios.InterfaceRepositorioAnimes;
-import br.edu.ufape.myufapeanime.myufapeanime.repositorios.InterfaceRepositorioAvaliacoes;
 import br.edu.ufape.myufapeanime.myufapeanime.repositorios.InterfaceRepositorioUsuarios;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -55,9 +54,6 @@ public class GerenciadorAnimes {
     @Qualifier("interfaceRepositorioAnimes")
     @Autowired
     private InterfaceRepositorioAnimes repositorioAnimes;
-
-    @Autowired
-    private InterfaceRepositorioAvaliacoes repositorioAvaliacoes;
 
     /**********IMPLEMENTAÇÃO DE CADASTRO USUARIO ********/
     //salvar
@@ -279,20 +275,12 @@ public class GerenciadorAnimes {
     //ve se assim funciona
     public Avaliacao updateAvaliacao(Avaliacao novaAvaliacao)
             throws AvaliacaoNotaInvalidaException, AvaliacaoInexistenteException {
-
         return cadastroAvaliacao.update(novaAvaliacao);
     }
 
     // Apagar avaliacao por Id
     public void deleteAvaliacaoById(Long id) throws AvaliacaoInexistenteException {
         cadastroAvaliacao.deleteById(id);
-    }
-
-    public void deleteAvaliacao(Long animeId, Usuario usuario) throws AnimeInexistenteException, AutorizacaoNegadaException, AvaliacaoInexistenteException {
-        checarUsuarioLogado(usuario);
-        Anime anime = repositorioAnimes.findById(animeId).orElseThrow(() -> new AnimeInexistenteException(animeId));
-        Avaliacao avaliacao = repositorioAvaliacoes.findAvaliacaoByAnimeAndUsuario(anime, usuario).orElseThrow(() -> new AvaliacaoInexistenteException(0L));
-        cadastroAvaliacao.delete(avaliacao);
     }
 
     //buscar por id
@@ -305,14 +293,6 @@ public class GerenciadorAnimes {
         return cadastroAvaliacao.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
-    }
-
-    public List<AvaliacaoDTO> findAllAvaliacaoAnimeId(Long animeId){
-        return findAllAvaliacao().stream().filter(avaliacaoBolso -> avaliacaoBolso.getAnimeAvaliado().getId().equals(animeId)).toList();
-    }
-
-    public List<AvaliacaoDTO> findAllUserAvaliacoes(Long userId){
-        return findAllAvaliacao().stream().filter(avaliacaoNaro -> avaliacaoNaro.getUsuarioAvaliador().getId().equals(userId)).toList();
     }
 
     public Usuario login(String email, String senha) throws UsuarioInexistenteException, UsuarioSenhaInvalidaException {

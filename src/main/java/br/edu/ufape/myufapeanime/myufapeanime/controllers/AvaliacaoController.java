@@ -33,8 +33,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import br.edu.ufape.myufapeanime.myufapeanime.dto.mappers.AvaliacaoMapper;
-
 @RestController
 @RequestMapping("/avaliacao")
 @Tag(name = "Avaliações", description = "API de gerenciamento de avaliações")
@@ -78,8 +76,7 @@ public class AvaliacaoController {
     public ResponseEntity<Object> cadastrarAvaliacao(@RequestBody AvaliacaoPeloIdDTO avaliacaoPeloIdDTO, HttpSession session) {
         try {
             Usuario usuario = (Usuario) session.getAttribute("user");
-            Avaliacao avaliacao = AvaliacaoMapper.convertToEntity(avaliacaoPeloIdDTO);
-            avaliacao.setAnime(gerenciador.findAnimeById(avaliacaoPeloIdDTO.getAnimeAvaliado()));
+            Avaliacao avaliacao = convertToEntity(avaliacaoPeloIdDTO);
 
             Avaliacao novaAvaliacao = gerenciador.createAvaliacao(avaliacao, usuario);
 
@@ -156,11 +153,12 @@ public class AvaliacaoController {
             throws AnimeInexistenteException {
         try {
             Usuario usuario = (Usuario) session.getAttribute("user");
-            Avaliacao avaliacaoAtualizada = AvaliacaoMapper.convertToEntityUpdate(avaliacaoDTO);
+            Avaliacao avaliacaoAtualizada = convertToEntityUpdate(avaliacaoDTO);
 
-            List<AvaliacaoDTO> avaliacaos = gerenciador.findAllAvaliacao();
+            List<Avaliacao> avaliacaos = gerenciador.findAllAvaliacao();
             Optional<AvaliacaoDTO> resultado = avaliacaos
                     .stream()
+                    .map(this::convertToDTO)
                     .filter(avaliacao1 -> avaliacao1.getAnimeAvaliado().getId().equals(idAnime) && avaliacao1.getUsuarioAvaliador().getId().equals(usuario.getId()))
                     .findFirst();
 
@@ -206,8 +204,17 @@ public class AvaliacaoController {
     public ResponseEntity<Object> deleteAvaliacao(@PathVariable Long idAnime, HttpSession session) throws AnimeInexistenteException {
         try {
             Usuario usuario = (Usuario) session.getAttribute("user");
+            List<Avaliacao> avaliacaos = gerenciador.findAllAvaliacao();
 
-            gerenciador.deleteAvaliacao(idAnime, usuario);
+            // Filtra a avaliação correspondente ao anime e ao usuário, ou lança uma exceção se não encontrada
+            Avaliacao avaliacao = avaliacaos
+                    .stream()
+                    .filter(avaliacao1 -> avaliacao1.getAnime().getId().equals(idAnime) && avaliacao1.getUsuarioAvaliador().getId().equals(usuario.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new AvaliacaoInexistenteDeleteException("Avaliação não encontrada para o anime e usuário especificados."));
+
+
+            gerenciador.deleteAvaliacaoById(avaliacao.getId());
             return ResponseEntity.noContent().build();
 
         } catch (AvaliacaoInexistenteException e) {
@@ -238,6 +245,9 @@ public class AvaliacaoController {
 
     public ResponseEntity<List<AvaliacaoDTO>> findAll() {
         List<AvaliacaoDTO> avaliacao = gerenciador.findAllAvaliacao();
+        List<AvaliacaoDTO> result = avaliacao.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(avaliacao);
     }
 
@@ -268,11 +278,12 @@ public class AvaliacaoController {
     public ResponseEntity<Object> findById(@PathVariable Long id) {
         try {
             Avaliacao avaliacao = gerenciador.findAvaliacaoById(id);
-            AvaliacaoDTO avaliacaoDTO = AvaliacaoMapper.convertToDTO(avaliacao);
+            AvaliacaoDTO avaliacaoDTO = convertToDTO(avaliacao);
             return ResponseEntity.ok(avaliacaoDTO);
         } catch (AvaliacaoInexistenteException e){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+
     }
 
     //listar todas as Avaliações de um anime específico
@@ -290,10 +301,13 @@ public class AvaliacaoController {
                     )
             }
     )
-    public ResponseEntity<List<AvaliacaoDTO>> findAll(@PathVariable Long id) {
-        List<AvaliacaoDTO> avaliacao = gerenciador.findAllAvaliacaoAnimeId(id);
-
-        return ResponseEntity.ok(avaliacao);
+    public ResponseEntity<List<AvaliacaoPeloIdDTO>> findAll(@PathVariable Long id) {
+        List<Avaliacao> avaliacao = gerenciador.findAllAvaliacao();
+        List<AvaliacaoPeloIdDTO> result = avaliacao.stream()
+                .map(this::convertToComIdDTO)
+                .filter(AvaliacaoPeloIdDTO -> AvaliacaoPeloIdDTO.getAnimeAvaliado().equals(id))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 
     //listar todas as Avaliações de um usuário específico
@@ -311,14 +325,37 @@ public class AvaliacaoController {
                     )
             }
     )
-    public ResponseEntity<List<AvaliacaoDTO>> findAllByUser(@PathVariable Long id) {
-        List<AvaliacaoDTO> avaliacao = gerenciador.findAllUserAvaliacoes(id);
-
-        return ResponseEntity.ok(avaliacao);
+    public ResponseEntity<List<AvaliacaoPeloIdDTO>> findAllByUser(@PathVariable Long id) {
+        List<Avaliacao> avaliacao = gerenciador.findAllAvaliacao();
+        List<AvaliacaoPeloIdDTO> result = avaliacao.stream()
+                .map(this::convertToComIdDTO)
+                .filter(AvaliacaoPeloIdDTO -> AvaliacaoPeloIdDTO.getUsuarioAvaliador().equals(id))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 
 
     private AvaliacaoPeloIdDTO convertToComIdDTO(Avaliacao avaliacao) {
         return AvaliacaoMapper.convertToComIdDTO(avaliacao);
+    }
+
+
+    private Avaliacao convertToEntity(AvaliacaoPeloIdDTO avaliacaoDTO) throws AnimeInexistenteException, UsuarioInexistenteException {
+        Avaliacao avaliacao = new Avaliacao();
+        avaliacao.setNota(avaliacaoDTO.getNota());
+        avaliacao.setComentario(avaliacaoDTO.getComentario());
+        //avaliacao.setUsuarioAvaliador(gerenciador.findUsuarioById(avaliacaoDTO.getUsuarioAvaliador()));
+        avaliacao.setAnime(gerenciador.findAnimeById(avaliacaoDTO.getAnimeAvaliado()));
+
+        return avaliacao;
+    }
+
+    private Avaliacao convertToEntityUpdate(AvaliacaoUpdateDTO avaliacaoDTO) throws AnimeInexistenteException {
+        Avaliacao avaliacao = new Avaliacao();
+        avaliacao.setNota(avaliacaoDTO.getNota());
+        avaliacao.setComentario(avaliacaoDTO.getComentario());
+        avaliacao.setId(avaliacaoDTO.getId());
+
+        return avaliacao;
     }
 }
