@@ -12,9 +12,6 @@ import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroAnimeExce
 import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroAnimeExceptions.AnimeInexistenteException;
 import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroAnimeExceptions.NumeroDeEpisodiosInvalidoException;
 import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroAutenticacaoExceptions.AutorizacaoNegadaException;
-import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroAvaliacaoExceptions.AvaliacaoInexistenteException;
-import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroUsuarioExceptions.UsuarioDuplicadoException;
-import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroUsuarioExceptions.UsuarioInexistenteException;
 import br.edu.ufape.myufapeanime.myufapeanime.negocio.fachada.GerenciadorAnimes;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -289,56 +286,6 @@ public class AnimeController {
     public ResponseEntity<Object> deletarAnime(@PathVariable Long id, HttpSession session) {
         try {
             Usuario usuario = (Usuario) session.getAttribute("user");
-
-            // Faz uma lista filtrando apenas as avaliações desse user e dps apaga elas
-            List<Avaliacao> avaliacao = gerenciadorAnimes.findAllAvaliacao();
-            List<AvaliacaoPeloIdDTO> result = avaliacao.stream()
-                    .map(this::convertToComIdDTO)
-                    .filter(AvaliacaoComIdDTO -> AvaliacaoComIdDTO.getAnimeAvaliado().equals(id))
-                    .toList();
-            result.forEach(avaliacaoDTO -> {
-                try {
-                    gerenciadorAnimes.deleteAvaliacaoById(avaliacaoDTO.getId());
-                } catch (AvaliacaoInexistenteException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            List<Usuario> todosUsuariosQueroAssistir = gerenciadorAnimes.findAllUsuarios();
-            todosUsuariosQueroAssistir.forEach(user -> {
-                List<Anime> queroAssistirList = user.getQueroAssistir();
-                if (queroAssistirList.removeIf(anime -> anime.getId().equals(id))) {
-                    try {
-                        gerenciadorAnimes.updateUsuario(user); // Atualiza o usuário com a lista atualizada
-                    } catch (UsuarioInexistenteException | UsuarioDuplicadoException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
-
-            List<Usuario> todosUsuariosCompleto = gerenciadorAnimes.findAllUsuarios();
-            todosUsuariosCompleto.forEach(user -> {
-                List<Anime> CompletoList = user.getCompleto();
-                if (CompletoList.removeIf(anime -> anime.getId().equals(id))) {
-                    try {
-                        gerenciadorAnimes.updateUsuario(user); // Atualiza o usuário com a lista atualizada
-                    } catch (UsuarioInexistenteException | UsuarioDuplicadoException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
-
-            List<Usuario> todosUsuariosAssistindo = gerenciadorAnimes.findAllUsuarios();
-            todosUsuariosAssistindo.forEach(user -> {
-                List<Anime> queroAssistirList = user.getAssistindo();
-                if (queroAssistirList.removeIf(anime -> anime.getId().equals(id))) {
-                    try {
-                        gerenciadorAnimes.updateUsuario(user); // Atualiza o usuário com a lista atualizada
-                    } catch (UsuarioInexistenteException | UsuarioDuplicadoException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
 
             gerenciadorAnimes.deletarAnime(id, usuario);
             return ResponseEntity.ok("Anime e suas avaliações foram deletados com sucesso.");
