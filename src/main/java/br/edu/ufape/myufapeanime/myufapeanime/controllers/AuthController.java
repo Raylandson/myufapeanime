@@ -80,7 +80,7 @@ public class AuthController {
         session.removeAttribute("user");
         session.invalidate();
 
-        return ResponseEntity.status(HttpStatus.OK).body(null);
+        return ResponseEntity.status(HttpStatus.OK).body("Deslogado do sistema.");
     }
 
     @PostMapping("/cadastrar")
