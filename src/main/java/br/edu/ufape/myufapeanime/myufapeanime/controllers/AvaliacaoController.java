@@ -244,11 +244,11 @@ public class AvaliacaoController {
     )
 
     public ResponseEntity<List<AvaliacaoDTO>> findAll() {
-        List<AvaliacaoDTO> avaliacao = gerenciador.findAllAvaliacao();
+        List<Avaliacao> avaliacao = gerenciador.findAllAvaliacao();
         List<AvaliacaoDTO> result = avaliacao.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(avaliacao);
+        return ResponseEntity.ok(result);
     }
 
     //lista uma Avaliação
@@ -339,6 +339,9 @@ public class AvaliacaoController {
         return AvaliacaoMapper.convertToComIdDTO(avaliacao);
     }
 
+    private AvaliacaoDTO convertToDTO(Avaliacao avaliacao) {
+        return AvaliacaoMapper.convertToDTO(avaliacao);
+    }
 
     private Avaliacao convertToEntity(AvaliacaoPeloIdDTO avaliacaoDTO) throws AnimeInexistenteException, UsuarioInexistenteException {
         Avaliacao avaliacao = new Avaliacao();

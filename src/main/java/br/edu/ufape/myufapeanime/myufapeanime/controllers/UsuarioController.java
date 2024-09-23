@@ -128,11 +128,14 @@ public class UsuarioController {
             //busca a lista de animes assistidos
             Usuario usuario = (Usuario) session.getAttribute("user");
 
-            List<AnimeDTO> animesAssistidos = gerenciador.getAssistindoUsuario(usuario);
+            List<Anime> animesAssistidos = gerenciador.getAssistindoUsuario(usuario);
 
             //converte os Animes para AnimeDTOs
+            List<AnimeDTO> dtos = animesAssistidos.stream()
+                    .map(AnimeMapper::convertToAnimeDTO)
+                    .collect(Collectors.toList());
 
-            return ResponseEntity.ok(animesAssistidos);
+            return ResponseEntity.ok(dtos);
         } catch (UsuarioInexistenteException | AutorizacaoNegadaException e) {
             return ResponseEntity.notFound().build();
         }
@@ -151,9 +154,13 @@ public class UsuarioController {
     public ResponseEntity<List<AnimeDTO>> getAnimesCompletos(HttpSession session) {
         try {
             Usuario usuario = (Usuario) session.getAttribute("user");
-            List<AnimeDTO> animesAssistidos = gerenciador.getCompletosUsuario(usuario);
+            List<Anime> animesAssistidos = gerenciador.getCompletosUsuario(usuario);
 
-            return ResponseEntity.ok(animesAssistidos);
+            List<AnimeDTO> dtos = animesAssistidos.stream()
+                    .map(AnimeMapper::convertToAnimeDTO)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(dtos);
         } catch (UsuarioInexistenteException | AutorizacaoNegadaException e) {
             return ResponseEntity.notFound().build();
         }
@@ -172,9 +179,14 @@ public class UsuarioController {
     public ResponseEntity<List<AnimeDTO>> getAnimesQueroAssistir(HttpSession session) {
         try {
             Usuario usuario = (Usuario) session.getAttribute("user");
-            List<AnimeDTO> animesAssistidos = gerenciador.getQueroAssistirUsuario(usuario);
 
-            return ResponseEntity.ok(animesAssistidos);
+            List<Anime> animesAssistidos = gerenciador.getQueroAssistirUsuario(usuario);
+
+            List<AnimeDTO> dtos = animesAssistidos.stream()
+                    .map(AnimeMapper::convertToAnimeDTO)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(dtos);
         } catch (UsuarioInexistenteException | AutorizacaoNegadaException e) {
             return ResponseEntity.notFound().build();
         }

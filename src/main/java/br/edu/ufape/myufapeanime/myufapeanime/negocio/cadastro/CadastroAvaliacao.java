@@ -7,7 +7,6 @@ import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroAvaliacao
 import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroAvaliacaoExceptions.AvaliacaoInexistenteException;
 import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroAvaliacaoExceptions.AvaliacaoNotaInvalidaException;
 import br.edu.ufape.myufapeanime.myufapeanime.negocio.cadastro.cadastroUsuarioExceptions.UsuarioInexistenteException;
-import br.edu.ufape.myufapeanime.myufapeanime.negocio.fachada.GerenciadorAnimes;
 import br.edu.ufape.myufapeanime.myufapeanime.repositorios.InterfaceRepositorioAnimes;
 import br.edu.ufape.myufapeanime.myufapeanime.repositorios.InterfaceRepositorioAvaliacoes;
 import br.edu.ufape.myufapeanime.myufapeanime.repositorios.InterfaceRepositorioUsuarios;
@@ -41,7 +40,12 @@ public class CadastroAvaliacao implements CadastroInterface<Avaliacao> {
     private InterfaceRepositorioAvaliacoes avaliacaoRepository;
 
     @Autowired
-    private GerenciadorAnimes gerenciadorAnimes;
+    private InterfaceRepositorioAnimes animeRepository;
+
+    @Qualifier("interfaceRepositorioUsuarios")
+    @Autowired
+    private InterfaceRepositorioUsuarios repositorioUsuario;
+
     /**
      * Cria uma nova avaliação no sistema.
      * Verifica se a nota está dentro dos parâmetros válidos (0 a 5), se o usuário e o anime
@@ -52,19 +56,31 @@ public class CadastroAvaliacao implements CadastroInterface<Avaliacao> {
      * @param avaliacao O objeto Avaliacao a ser criado.
      * @return O objeto Avaliacao salvo no banco de dados.
      * @throws AvaliacaoNotaInvalidaException Lançada se a nota for inválida (fora de 0 a 5).
+     * @throws UsuarioInexistenteException Lançada se o usuário não existir no banco de dados.
+     * @throws AnimeInexistenteException Lançada se o anime não existir no banco de dados.
      * @throws AvaliacaoDuplicadaException Lançada se o usuário já tiver avaliado o mesmo anime.
      */
     @Override
+    //TODO: falar com a professora sobre dependencias de outros repositorios no cadastro de avaliação
     public Avaliacao create(Avaliacao avaliacao)
             throws AvaliacaoNotaInvalidaException, UsuarioInexistenteException, AvaliacaoDuplicadaException, AnimeInexistenteException {
     if(avaliacao.getNota() > 5 || avaliacao.getNota() < 0){
         throw new AvaliacaoNotaInvalidaException(avaliacao.getNota());
     }
+
+    if (!repositorioUsuario.existsById(avaliacao.getUsuarioAvaliador().getId())){
+        throw new UsuarioInexistenteException(avaliacao.getUsuarioAvaliador().getId());
+    }
+
+    if(!animeRepository.existsById(avaliacao.getAnime().getId())){
+        throw new AnimeInexistenteException(avaliacao.getAnime().getId());
+    }
+
     if(avaliacaoRepository.existsAvaliacaoByAnimeAndUsuarioAvaliador(avaliacao.getAnime(),avaliacao.getUsuarioAvaliador())){
         throw new AvaliacaoDuplicadaException(avaliacao.getAnime().getId(),avaliacao.getUsuarioAvaliador().getId());
     }
         Avaliacao novaAvaliacao = avaliacaoRepository.save(avaliacao);
-        gerenciadorAnimes.mudarPontuacaoAnime(novaAvaliacao.getAnime(), novaAvaliacao.getNota(), 1L);
+        mudarPontuacaoAnime(novaAvaliacao.getAnime(), novaAvaliacao.getNota(), 1L);
 
         return novaAvaliacao;
     }
@@ -96,7 +112,7 @@ public class CadastroAvaliacao implements CadastroInterface<Avaliacao> {
         double notaAtual = newAvaliacao.getNota();
         Anime anime = newAvaliacao.getAnime();
         // eu tiro a pontuação antiga da nova para calcular a diferença
-        gerenciadorAnimes.mudarPontuacaoAnime(anime, notaAtual - notaAntiga, 0L);
+        mudarPontuacaoAnime(anime, notaAtual - notaAntiga, 0L);
 
         return avaliacaoRepository.save(newAvaliacao);
     }
@@ -125,7 +141,7 @@ public class CadastroAvaliacao implements CadastroInterface<Avaliacao> {
         Avaliacao avaliacao = avaliacaoRepository.findById(id)
                 .orElseThrow(() -> new AvaliacaoInexistenteException(id));
         //ele tira a nota e tira um do total
-        gerenciadorAnimes.mudarPontuacaoAnime(avaliacao.getAnime(), - avaliacao.getNota(), - 1L);
+        mudarPontuacaoAnime(avaliacao.getAnime(), - avaliacao.getNota(), - 1L);
         avaliacaoRepository.deleteById(id);
     }
 
@@ -160,5 +176,10 @@ public class CadastroAvaliacao implements CadastroInterface<Avaliacao> {
      * @param ajusteNota A diferença na nota a ser aplicada.
      * @param ajusteAvaliacoes A alteração no número total de avaliações (adicionar ou remover).
      */
+    private void mudarPontuacaoAnime(Anime anime, Double ajusteNota, Long ajusteAvaliacoes) {
+        anime.setPontuacao(anime.getPontuacao() + ajusteNota);
+        anime.setAvaliacoesTotais(anime.getAvaliacoesTotais() + ajusteAvaliacoes);
+        animeRepository.save(anime);
+    }
 
 }
